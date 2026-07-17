@@ -345,7 +345,7 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
         case TS_STATE_START:
             // In the start state, we can precharge the TS
             HAL_GPIO_WritePin(hbms->PrechargeAIR.Port, hbms->PrechargeAIR.Pin, GPIO_PIN_SET); // Set the precharge AIR pin high, to indicate precharging
-            HAL_GPIO_WritePin(hbms->MinusAIR.Port, hbms->MinusAIR.Pin, GPIO_PIN_SET);         // Set the precharge AIR pin high, to indicate precharging
+            HAL_GPIO_WritePin(hbms->PlusAIR.Port, hbms->PlusAIR.Pin, GPIO_PIN_SET);         // Set the precharge AIR pin high, to indicate precharging
             hbms->PrechargeTimestamp = HAL_GetTick();                                         // Update the precharge timestamp
             hbms->TSState = TS_STATE_PRECHARGE;                                               // Move to the precharge state
             break;
@@ -363,7 +363,7 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
                     hbms->TSState = TS_STATE_READY;           // Move to the ready state
                 }
             }
-            else if ((((float)hbms->InverterVoltage) >= (*hbms->PackVoltage) * 0.9f) && (*hbms->PackVoltage) > 300.0f)
+            else if ((((float)hbms->InverterVoltage) >= (*hbms->PackVoltage) * 0.97f) && (*hbms->PackVoltage) > 300.0f)
             {
                 // If the inverter voltage is above 90% of the pack voltage, we can activate the TS
                 HAL_GPIO_WritePin(hbms->PlusAIR.Port, hbms->PlusAIR.Pin, GPIO_PIN_SET);
