@@ -44,10 +44,10 @@ void MX_CORDIC_Init(void)
   /* USER CODE BEGIN CORDIC_Init 2 */
 
   /* USER CODE END CORDIC_Init 2 */
-  
 
 }
 
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
+

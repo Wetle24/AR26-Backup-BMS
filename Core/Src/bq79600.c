@@ -877,7 +877,7 @@ BQ_StatusTypeDef BQ_Write(BQ_HandleTypeDef *hbq, uint8_t *inData, uint8_t device
         writeSize++;
     }
 
-    uint16_t crc = HAL_CRC_Calculate(&hcrc, writeData, writeSize);
+    uint16_t crc = HAL_CRC_Calculate(&hcrc, (uint32_t *)writeData, (uint32_t)writeSize);
     writeData[writeSize] = (uint8_t)(crc >> 0);
     writeSize++;
     writeData[writeSize] = (uint8_t)(crc >> 8);
@@ -906,7 +906,7 @@ BQ_StatusTypeDef BQ_BalanceCells(BQ_HandleTypeDef *hbq)
         // TODO: Activate balancing with automatic duty cycling
         uint8_t data[hbq->NumOfCellsEach]; // Create an array to hold the data to be written
         memset(data, 0x03, hbq->NumOfCellsEach); // Set all cells to balance for a minute at a time
-        BQ_StatusTypeDef status = BQ_Write(hbq, &data, BQ_SELF_ID, BQ16_CB_CELL16_CTRL+(16-hbq->NumOfCellsEach), hbq->NumOfCellsEach, BQ_STACK_WRITE); // Prefill cell balancing control register with 0x03, which means balance for 1 minute at a time
+        BQ_StatusTypeDef status = BQ_Write(hbq, data, BQ_SELF_ID, BQ16_CB_CELL16_CTRL+(16-hbq->NumOfCellsEach), hbq->NumOfCellsEach, BQ_STACK_WRITE); // Prefill cell balancing control register with 0x03, which means balance for 1 minute at a time
 
         if (status != BQ_STATUS_OK)
         {

@@ -54,10 +54,10 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(Ext_WD_Sig_GPIO_Port, Ext_WD_Sig_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(AMS_Fault_GPIO_Port, AMS_Fault_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, AMS_Fault_Pin|Plus_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SPI2_CS_Pin|Plus_Pin|Minus_Pin|Precharge_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SPI2_CS_Pin|Minus_Pin|Precharge_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : Ext_WD_Sig_Pin */
   GPIO_InitStruct.Pin = Ext_WD_Sig_Pin;
@@ -66,31 +66,31 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(Ext_WD_Sig_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : AMS_Fault_Pin */
-  GPIO_InitStruct.Pin = AMS_Fault_Pin;
+  /*Configure GPIO pins : AMS_Fault_Pin Plus_Pin */
+  GPIO_InitStruct.Pin = AMS_Fault_Pin|Plus_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(AMS_Fault_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : SDC_Pin nFault_Pin */
-  GPIO_InitStruct.Pin = SDC_Pin|nFault_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SPIRDY_Pin */
-  GPIO_InitStruct.Pin = SPIRDY_Pin;
+  /*Configure GPIO pins : SPIRDY_Pin SDC_Pin */
+  GPIO_InitStruct.Pin = SPIRDY_Pin|SDC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SPIRDY_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SPI2_CS_Pin Plus_Pin Minus_Pin Precharge_Pin */
-  GPIO_InitStruct.Pin = SPI2_CS_Pin|Plus_Pin|Minus_Pin|Precharge_Pin;
+  /*Configure GPIO pins : SPI2_CS_Pin Minus_Pin Precharge_Pin */
+  GPIO_InitStruct.Pin = SPI2_CS_Pin|Minus_Pin|Precharge_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : nFault_Pin */
+  GPIO_InitStruct.Pin = nFault_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(nFault_GPIO_Port, &GPIO_InitStruct);
 
 }
 

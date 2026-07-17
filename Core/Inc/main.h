@@ -94,24 +94,24 @@ void USB_CDC_RxHandler(uint8_t*, uint32_t);
 #define Low_Current_Sensor_GPIO_Port GPIOA
 #define AMS_Fault_Pin GPIO_PIN_1
 #define AMS_Fault_GPIO_Port GPIOA
-#define SDC_Pin GPIO_PIN_4
-#define SDC_GPIO_Port GPIOA
+#define Temperature_Pin GPIO_PIN_4
+#define Temperature_GPIO_Port GPIOA
 #define High_Current_Sensor_Pin GPIO_PIN_5
 #define High_Current_Sensor_GPIO_Port GPIOA
-#define Temperature_Pin GPIO_PIN_2
-#define Temperature_GPIO_Port GPIOB
 #define SPIRDY_Pin GPIO_PIN_11
 #define SPIRDY_GPIO_Port GPIOB
 #define SPI2_CS_Pin GPIO_PIN_12
 #define SPI2_CS_GPIO_Port GPIOB
 #define nFault_Pin GPIO_PIN_8
 #define nFault_GPIO_Port GPIOA
-#define Plus_Pin GPIO_PIN_3
-#define Plus_GPIO_Port GPIOB
-#define Minus_Pin GPIO_PIN_4
+#define Plus_Pin GPIO_PIN_15
+#define Plus_GPIO_Port GPIOA
+#define Minus_Pin GPIO_PIN_3
 #define Minus_GPIO_Port GPIOB
-#define Precharge_Pin GPIO_PIN_5
+#define Precharge_Pin GPIO_PIN_4
 #define Precharge_GPIO_Port GPIOB
+#define SDC_Pin GPIO_PIN_5
+#define SDC_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
