@@ -6,6 +6,7 @@
 #include "faults.h"
 #include <stm32g4xx.h>
 #include "main.h"
+#include "bms_config.h"
 // #define BQ_DISABLE
 
 // Private Function defines
@@ -226,6 +227,7 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
             // If configuration fails, set the state to fault
             hbms->State = BMS_STATE_FAULT;
         }
+
         break;
     }
     case BMS_STATE_CONNECTING:
