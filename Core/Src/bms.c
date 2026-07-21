@@ -68,7 +68,7 @@ void BMS_Init(BMS_HandleTypeDef *hbms, BMS_HardwareConfigTypeDef *hardware_confi
     hbms->BalancingEnabled = false;                     // Initialize the balancing enabled flag to false
     hbms->BalancingActive = &hbms->BQ->BalancingActive; // Bind the balancing active flag from the BQ handle
 
-    HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_RESET);         // Set the fault pin low, to indicate no fault in the BMS
+    HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_SET);         // Set the fault pin low, to indicate no fault in the BMS
     HAL_GPIO_WritePin(hbms->PlusAIR.Port, hbms->PlusAIR.Pin, GPIO_PIN_RESET);           // Set the plus AIR pin low, to indicate no fault in the BMS
     HAL_GPIO_WritePin(hbms->MinusAIR.Port, hbms->MinusAIR.Pin, GPIO_PIN_RESET);         // Set the minus AIR pin low, to indicate no fault in the BMS
     HAL_GPIO_WritePin(hbms->PrechargeAIR.Port, hbms->PrechargeAIR.Pin, GPIO_PIN_RESET); // Set the precharge AIR pin low, to indicate no fault in the BMS
@@ -149,8 +149,8 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
     float high_current_sensor_voltage = ((float)adc2_buffer[0]) / 4096.0f * 2900.0f;
     high_current_sensor_voltage = high_current_sensor_voltage * 5.0f / 3.0f;
     low_current_sensor_voltage = low_current_sensor_voltage * 5.0f / 3.0f;
-    float low_current_sensor = (low_current_sensor_voltage - 2500.0f) / 26.7f + 0.6; // + 0.6A to fix drift
-    float high_current_sensor = (high_current_sensor_voltage - 2500.0f) / 6.0f;
+    float low_current_sensor = (((low_current_sensor_voltage - 2500.0f) / 26.7f + 0.6) - 38.4f) * 5.0f  / 7.0f; // + 0.6A to fix drift
+    float high_current_sensor = (((high_current_sensor_voltage - 2500.0f) / 6.0f) - 168.4f) * 5.0f / 5.7f;
 
     float new_current = fabs(low_current_sensor) <= 50.0 ? low_current_sensor : high_current_sensor;
     float rc = 1.0/(20.0*2.0*3.14);
@@ -162,7 +162,7 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
     }else{
         float dt = ((float)millis_since_last) / 1000.0f; // Convert the delta time to seconds
         float alpha = dt / (rc + dt); // Calculate the alpha value for the low-pass filter
-        hbms->MeasuredCurrent = hbms->MeasuredCurrent * (1-alpha) + alpha * (new_current); // Use the low current sensor if it is above 75A, otherwise use the high current sensor
+        hbms->MeasuredCurrent = (hbms->MeasuredCurrent * (1-alpha) + alpha * (new_current)); // Use the low current sensor if it is above 75A, otherwise use the high current sensor
     
         
     }
@@ -409,7 +409,7 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
     case BMS_STATE_FAULT:
 
         // Send the BMS fault signal
-        HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_SET); // Set the fault pin low, to indicate a fault in the BMS
+        HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_RESET); // Set the fault pin low, to indicate a fault in the BMS
 
         // Make properly sure that no relays are set (although the SDC should do the same)
         HAL_GPIO_WritePin(hbms->PlusAIR.Port, hbms->PlusAIR.Pin, GPIO_PIN_RESET);           // Set the plus AIR pin low, to indicate no TS active
@@ -568,12 +568,14 @@ bool LoadConfiguration(BMS_HandleTypeDef *hbms)
         // If this fails, it can still indicate that the EEPROM is present
         // But the configuration is invalid or corrupted
         BMS_Config_Init(&hbms->Config); // Reinitialize the configuration to default values
+        /*
         if (BMS_Config_WriteToFlash(&hbms->Config) != BMS_CONFIG_OK)
         {
             // If the configuration write to flash fails, we set the EepromPresent flag to false
             // Note: The written config is also re-read from flash
             hbms->EepromPresent = false; // Set the EEPROM present flag to false
         }
+            */
     }
 
     // Configure the BQ with the BMS configuration
