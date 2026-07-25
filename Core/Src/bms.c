@@ -288,10 +288,13 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
             hbms->TSState = TS_STATE_START;    // Set the TS state to start
         }
 
-        if (hbms->ChargerPresent && hbms->SdcClosed && hbms->StartCharging )
+        if (hbms->StartCharging)
         {
-            hbms->State = BMS_STATE_CHARGING; // If the TS is requested (or we are connected to the charger) and the SDC is closed, we can activate the TS
-            hbms->TSState = TS_STATE_START;   // Set the TS state to start
+            if (hbms->ChargerPresent && hbms->SdcClosed && hbms->StartCharging )
+            {
+                hbms->State = BMS_STATE_CHARGING; // If the TS is requested (or we are connected to the charger) and the SDC is closed, we can activate the TS
+                hbms->TSState = TS_STATE_START;   // Set the TS state to start
+            }
         }
 
         break;
@@ -607,7 +610,7 @@ bool LoadConfiguration(BMS_HandleTypeDef *hbms)
 
 void ListenForCanMessages(BMS_HandleTypeDef *hbms)
 {
-
+    uint8_t test = 0;
     FDCAN_RxHeaderTypeDef rx_header;
     uint8_t rx_data[8]; // Buffer for the received CAN data
 
@@ -652,6 +655,7 @@ void ListenForCanMessages(BMS_HandleTypeDef *hbms)
                         hbms->StartCharging = (rx_data[0] & 0x01) > 0; // Set the start charging flag based on the first byte of the received data
                     }
                 }
+
 
                 // Dashboard Node ID
                 if (node_id == 18)
@@ -720,6 +724,15 @@ void BroadcastBMSState(BMS_HandleTypeDef *hbms)
     data[7] = (uint8_t)(pack_voltage);                           // Pack voltage
 
     Align_CAN_Send(hbms->FDCAN, Align_CombineCanId(0x2, hbms->Config.CanNodeID, hbms->Config.CanExtended), data, 8, hbms->Config.CanExtended); // Send the broadcast packet
+
+
+    uint8_t testdata[3] = {0};
+    testdata[0] = hbms->ChargerPresent;
+    testdata[1] = hbms->SdcClosed;
+    testdata[2] = hbms->StartCharging;
+    
+    uint32_t test_can_id = Align_CombineCanId(0x3, 67, hbms->Config.CanExtended);
+    Align_CAN_Send(hbms->FDCAN, test_can_id, testdata, 3, hbms->Config.CanExtended);
 }
 
 void BroadcastBMSVoltages(BMS_HandleTypeDef *hbms)
