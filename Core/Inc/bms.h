@@ -66,6 +66,8 @@ typedef struct
 
     BMS_StateTypeDef State;      // The state of the BMS
     BMS_TS_StateTypeDef TSState; // The state of the TS
+
+    bool FirstFaultReading;
     uint8_t ActiveFaults;        // Active faults bitmask
     uint8_t ActiveWarnings;      // Active warnings bitmask
 

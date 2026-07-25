@@ -4,6 +4,7 @@
 #include "w25q_mem.h"
 #include "aligncan.h"
 #include "faults.h"
+#include <stdint.h>
 #include <stm32g4xx.h>
 #include "main.h"
 #include "bms_config.h"
@@ -48,6 +49,7 @@ void BMS_Init(BMS_HandleTypeDef *hbms, BMS_HardwareConfigTypeDef *hardware_confi
     }
 
     hbms->State = BMS_STATE_CONFIGURING; // Set the initial state to configuring
+    hbms->FirstFaultReading = true;      // This will be set to false the first time we read the faults
     hbms->ActiveFaults = 0;              // Clear the active faults
     hbms->ActiveWarnings = 0;            // Clear the active warnings
     hbms->WarningPresent = false;        // Clear the warning present flag
@@ -313,6 +315,13 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
         // We let this fall through, as the balancing state includes the TS active state and charging state
 
     case BMS_STATE_CHARGING:
+        if (!hbms->SdcClosed)
+        {
+            uint8_t data[5] = {0};
+            uint32_t can_id = 0x1806E5F4;
+            data[4] = 1; // Stop charging
+            Align_CAN_Send(hbms->FDCAN, can_id, data, 5, true);
+        }
         if (hbms->ChargerPresentTimestamp + hbms->Config.CanChargerBroadcastTimeout <= HAL_GetTick())
         {
             // If the charger timestamp is older than 1 second, we consider the charger disconnected
@@ -449,6 +458,11 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
 // Certain ActiveFaults are set elsewere, such as BQ related faults
 void CheckForFaults(BMS_HandleTypeDef *hbms)
 {
+    if (hbms->FirstFaultReading)
+    {
+        SET_BIT(hbms->ActiveFaults, BMS_FAULT_NONE);
+        hbms->FirstFaultReading = false;
+    }
 
     // All checks dependant on the BQ being connected
     if (hbms->BqConnected)
@@ -571,6 +585,7 @@ bool LoadConfiguration(BMS_HandleTypeDef *hbms)
         // If this fails, it can still indicate that the EEPROM is present
         // But the configuration is invalid or corrupted
         BMS_Config_Init(&hbms->Config); // Reinitialize the configuration to default values
+        hbms->EepromPresent = false;
         /*
         if (BMS_Config_WriteToFlash(&hbms->Config) != BMS_CONFIG_OK)
         {
@@ -610,7 +625,6 @@ bool LoadConfiguration(BMS_HandleTypeDef *hbms)
 
 void ListenForCanMessages(BMS_HandleTypeDef *hbms)
 {
-    uint8_t test = 0;
     FDCAN_RxHeaderTypeDef rx_header;
     uint8_t rx_data[8]; // Buffer for the received CAN data
 
