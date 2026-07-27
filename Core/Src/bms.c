@@ -24,6 +24,7 @@ void BroadcastBMSTemperatures(BMS_HandleTypeDef *hbms);
 uint8_t voltage_cycle = 0;    // This is used to cycle the voltage broadcast, so that it does not flood the bus
 uint8_t temp_cycle = 0;       // This is used to cycle the temperature broadcast, so that it does not flood the bus
 uint8_t resistance_cycle = 0; // This is used to cycle the resistance broadcast, so that it does not flood the bus
+uint32_t error_message_timer = 0;
 
 // Public Function implementations
 
@@ -70,7 +71,7 @@ void BMS_Init(BMS_HandleTypeDef *hbms, BMS_HardwareConfigTypeDef *hardware_confi
     hbms->BalancingEnabled = false;                     // Initialize the balancing enabled flag to false
     hbms->BalancingActive = &hbms->BQ->BalancingActive; // Bind the balancing active flag from the BQ handle
 
-    HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_SET);         // Set the fault pin low, to indicate no fault in the BMS
+    HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_RESET);         // Set the fault pin low, to indicate no fault in the BMS
     HAL_GPIO_WritePin(hbms->PlusAIR.Port, hbms->PlusAIR.Pin, GPIO_PIN_RESET);           // Set the plus AIR pin low, to indicate no fault in the BMS
     HAL_GPIO_WritePin(hbms->MinusAIR.Port, hbms->MinusAIR.Pin, GPIO_PIN_RESET);         // Set the minus AIR pin low, to indicate no fault in the BMS
     HAL_GPIO_WritePin(hbms->PrechargeAIR.Port, hbms->PrechargeAIR.Pin, GPIO_PIN_RESET); // Set the precharge AIR pin low, to indicate no fault in the BMS
@@ -114,13 +115,21 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
     // Some things can only be done when the BQ is connected
     if (hbms->BqConnected)
     {
-
         if (BQ_PollFaultSummaries(hbms->BQ) != BQ_STATUS_OK)
         {
             // If we cannot poll for fault, that is obviously a critical error
             // Depending on experience, we may want to let it retry a few times
             SET_BIT(hbms->ActiveFaults, BMS_FAULT_BQ_NOT_CONNECTED); // Set the BQ not connected fault
             hbms->State = BMS_STATE_FAULT;                           // Set the state to fault
+
+            HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_RESET); // Set the fault pin low, to indicate a fault in the BMS
+
+            // Make properly sure that no relays are set (although the SDC should do the same)
+            HAL_GPIO_WritePin(hbms->PlusAIR.Port, hbms->PlusAIR.Pin, GPIO_PIN_RESET);           // Set the plus AIR pin low, to indicate no TS active
+            HAL_GPIO_WritePin(hbms->MinusAIR.Port, hbms->MinusAIR.Pin, GPIO_PIN_RESET);         // Set the minus AIR pin low, to indicate no TS active
+            HAL_GPIO_WritePin(hbms->PrechargeAIR.Port, hbms->PrechargeAIR.Pin, GPIO_PIN_RESET); // Set the precharge AIR pin low, to indicate no TS active
+            hbms->TSState = TS_STATE_START;                                                     // Move to the idle state
+            // Currently to reset the BMS, you need to power cycle it
         }
 
         if (hbms->VoltageTimestamp + 5 < HAL_GetTick())
@@ -143,6 +152,7 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
             hbms->ModelTimestamp = HAL_GetTick(); // Update the model timestamp
         }
     }
+    
 
     hbms->SdcClosed = HAL_GPIO_ReadPin(hbms->SdcPin.Port, hbms->SdcPin.Pin) == GPIO_PIN_SET; // Read the SdcClosed pin to see if the SDC is closed
 
@@ -207,13 +217,25 @@ void BMS_Update(BMS_HandleTypeDef *hbms)
     {
         hbms->DcLimit = 0; // If the discharge current limit is negative, set it to 0
     }
-    if (hbms->StartupTimestamp + 3000 < HAL_GetTick())
+    if (hbms->StartupTimestamp + 2000 < HAL_GetTick())
     {
         // Give the system three second to stabilize before starting to check for faults and warnings
         CheckForFaults(hbms);
         CheckForWarnings(hbms); // Check for faults and warnings
     }
     ListenForCanMessages(hbms); // Listen for CAN messages
+
+
+    if (HAL_GetTick() - error_message_timer > 200)
+    {
+        uint32_t error_can_id = Align_CombineCanId(0x30, 32, true);
+        uint8_t error_data[2] = {0};
+        error_data[0] = HAL_GPIO_ReadPin(hbms->FaultPin.Port, hbms->FaultPin.Pin);
+        error_data[1] = hbms->ActiveFaults;
+        Align_CAN_Send(hbms->FDCAN, error_can_id, error_data, 2, true);
+
+        error_message_timer = HAL_GetTick();
+    }
 
     switch (hbms->State)
     {
@@ -495,6 +517,7 @@ void CheckForFaults(BMS_HandleTypeDef *hbms)
         // If there are any faults, set the state to fault
         hbms->State = BMS_STATE_FAULT;
     }
+    else if (hbms->ActiveFaults == BMS_FAULT_NONE) HAL_GPIO_WritePin(hbms->FaultPin.Port, hbms->FaultPin.Pin, GPIO_PIN_SET); // Set the fault pin low, to indicate a fault in the BMS
 }
 
 void CheckForWarnings(BMS_HandleTypeDef *hbms)

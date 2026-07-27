@@ -8,7 +8,7 @@
 
 #define ADC_RES 16
 
-#define BQ_TIMEOUT 2000
+#define BQ_TIMEOUT 250
 
 // BQ79600 Own ID
 #define BQ_SELF_ID 0x00
